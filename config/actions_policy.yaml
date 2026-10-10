@@ -1,0 +1,88 @@
+# Handsfree Action Policy & Risk Classification Rules
+
+risk_tiers:
+  low:
+    description: "Read-only, scrolling, local view switching, and safe non-destructive queries"
+    require_confirmation: false
+    actions:
+      - "scroll"
+      - "read_page"
+      - "find_element"
+      - "inspect_control"
+      - "open_url"
+      - "search_google"
+      - "search_youtube"
+      - "navigate_maps"
+      - "weather"
+      - "wikipedia"
+      - "mode_switch"
+      - "mode_status"
+      - "volume"
+      - "brightness"
+      - "screenshot"
+
+  moderate:
+    description: "Interactive inputs, element clicks, active typing, and window switching"
+    require_confirmation: false
+    notify_user: true
+    actions:
+      - "click"
+      - "right_click"
+      - "double_click"
+      - "type_text"
+      - "press"
+      - "hotkey"
+      - "open_app"
+      - "switch_window"
+      - "show_desktop"
+      - "minimize"
+      - "maximize"
+      - "browser_click_element"
+      - "browser_fill_field"
+      - "browser_select_option"
+
+  high:
+    description: "Irreversible, destructive, financial, or system-altering operations"
+    require_confirmation: true
+    confirmation_timeout_sec: 30
+    actions:
+      - "close_window"
+      - "lock_screen"
+      - "exit_app"
+      - "browser_submit_form"
+      - "browser_delete_action"
+      - "browser_payment_action"
+
+safe_keys:
+  - "enter"
+  - "tab"
+  - "escape"
+  - "space"
+  - "backspace"
+  - "delete"
+  - "up"
+  - "down"
+  - "left"
+  - "right"
+  - "home"
+  - "end"
+  - "pageup"
+  - "pagedown"
+  - "f1"
+  - "f2"
+  - "f3"
+  - "f4"
+  - "f5"
+  - "f6"
+  - "f7"
+  - "f8"
+  - "f9"
+  - "f10"
+  - "f11"
+  - "f12"
+
+safe_modifiers:
+  - "ctrl"
+  - "alt"
+  - "shift"
+  - "win"

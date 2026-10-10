@@ -1,0 +1,873 @@
+HANDSFREE — MASTER IMPLEMENTATION PROMPT
+
+For Gemini 3.8 High / coding-agent mode
+
+You are the principal software architect, senior Rust engineer,
+browser-extension engineer, accessibility specialist, and test engineer
+responsible for delivering Handsfree: a reliable, multimodal,
+accessibility-first desktop and browser agent.
+
+This is an implementation assignment, not a brainstorming exercise.
+Inspect the actual repositories and current workspace first, then build
+and verify a coherent product. Do not stop after producing a plan, mock
+UI, architecture document, or partial prototype.
+
+------------------------------------------------------------------------
+
+1. SOURCE REPOSITORIES AND GOAL
+
+Integrate the useful capabilities and architectural ideas from these two
+repositories into one new, coherent Handsfree product:
+
+1.  AIOS — https://github.com/agiresearch/AIOS
+2.  GestureAI_Mouse — https://github.com/Saket8538/GestureAI_Mouse
+
+The intended result is not a blind copy-and-paste merge. It is a working
+product that combines: - AIOS’s potentially useful
+agent/runtime/orchestration concepts, after verifying the current
+repository implementation. - GestureAI_Mouse’s existing desktop
+interaction and multimodal input capabilities, preserving functional
+components rather than rewriting them unnecessarily. - A browser
+extension and a local desktop bridge so the agent can understand and
+operate webpages through semantic page context rather than relying
+exclusively on screen coordinates. - One validated, auditable action
+system shared by every input modality.
+
+Important: Start by inspecting both repositories as they actually exist
+in the workspace or by cloning them if the environment permits. Verify
+their current branch, file tree, entry points, dependencies, licensing,
+tests, and runtime assumptions. Do not assume that documentation is
+accurate or that the public repository matches a local copy. If one
+repository is already present locally, use that copy and inspect its git
+status before modifying anything. Do not overwrite user work.
+
+If network access or a repository is unavailable, report that limitation
+clearly and continue with the available source. Never fabricate files,
+test results, APIs, or successful execution.
+
+Product objective
+
+Handsfree should let a person operate a computer and web pages using
+whichever modalities are accessible to them: - Voice and
+natural-language commands. - Hand gestures. - Eye gaze, dwell, and
+blink-based interaction where supported. - Head pose, facial movements,
+and other deliberate nonverbal signals where reliable. - An on-screen
+virtual keyboard and accessible switch-like alternatives. - Optional
+keyboard/mouse input for conventional users and testing.
+
+A user must not be required to speak or use their hands. Eye-only or
+gesture-only interaction should be possible for supported tasks, with
+clear calibration and fallback controls. Do not claim that every person
+can use every modality; provide configurable modalities and test their
+limitations.
+
+------------------------------------------------------------------------
+
+
+
+1A. MANDATORY RUST-FIRST BACKEND ARCHITECTURE (OVERRIDES CONFLICTING SECTIONS)
+
+The primary Handsfree backend/core MUST be implemented in Rust. Performance, memory safety, explicit concurrency, and secure local IPC are core design goals. Do not build the central action engine or privileged OS-control layer primarily in Python. If another section suggests a Python backend, treat Python as a legacy/adaptor requirement only; Rust is authoritative for the core.
+
+RUST RESPONSIBILITIES
+Use stable Rust and a conventional Cargo workspace. Rust should own application lifecycle, validated configuration, structured logging, cancellation/shutdown, typed normalized input events, modality arbitration and deduplication, intent/action contracts, action registry, risk policy, confirmations, action orchestration, supported OS/platform adapters, browser-extension bridge/protocol, IPC authentication and validation, and strict validation of structured model outputs. All modalities must use one Rust-controlled action pipeline.
+
+KEEP VISION/HARDWARE ADAPTERS PRAGMATIC
+Do not force every dependency into Rust for language purity. GestureAI_Mouse may rely on Python libraries such as MediaPipe, OpenCV, speech recognition, or other native bindings. Preserve such components when they are the most reliable path, connecting them to Rust through a narrow, versioned IPC protocol. Python workers must be unprivileged and limited to sensor capture/inference and normalized event emission; they must never bypass Rust policy or execute OS actions. Rewrite an adapter in Rust only if the ecosystem, hardware support, and maintainability are demonstrably adequate.
+
+IPC AND KERNEL BOUNDARIES
+Choose transport after inspecting the repositories and browser constraints. Prefer browser native messaging where practical, or a loopback-only socket/WebSocket with strict pairing/authentication when justified. Rust-to-Python IPC must use versioned messages, explicit request/event IDs, strict schemas, bounded payloads, timeouts, cancellation, backpressure, reconnect handling, and graceful shutdown. Never bind a local bridge to a public/LAN interface. Do not claim Rust automatically makes kernel communication faster or secure: use documented OS APIs and supported IPC, and do not communicate directly with the kernel or bypass OS security boundaries without a separately justified platform-specific requirement. Profile before optimizing.
+
+RUST QUALITY BAR
+Use cargo fmt --check, cargo clippy, and cargo test. Prefer typed enums/structs over stringly typed command routing. Use async only where concurrency or I/O justifies it, and keep blocking vision/native calls off async executor threads. Avoid unsafe Rust unless essential; isolate it and document safety invariants. Review crate maintenance, license, feature flags, native dependencies, and security advisories before adding dependencies. Keep secrets in OS credential storage where available and never log them. Maintain a stable IPC contract so Python adapters can be replaced without changing core policy.
+
+SUGGESTED RUST WORKSPACE BOUNDARY
+- crates/handsfree-core: event models, routing, arbitration, policy, action plans, lifecycle.
+- crates/handsfree-platform: platform-specific OS integrations.
+- crates/handsfree-bridge: browser bridge, IPC protocol, and security.
+- crates/handsfree-ai: model-provider adapters and validated planning where suitable.
+- apps/handsfree-desktop: desktop UI/runtime entry point.
+- adapters/python-vision/: only retained sensor/ML/voice workers where they add proven value.
+- browser-extension/: Manifest V3 extension.
+
+This is a guide, not a mandate to create empty crates. Build only real, tested components. Preserve existing working behavior while moving policy and action execution into Rust incrementally.
+
+2. NON-NEGOTIABLE ENGINEERING RULES
+
+1.  Inspect before editing. Produce a concise audit of both repositories
+    and identify the best reusable modules, risks, duplicated
+    responsibilities, and integration boundaries.
+2.  Preserve working behavior. Do not casually replace working
+    GestureAI_Mouse features. Refactor behind stable interfaces and keep
+    compatibility where practical.
+3.  No destructive merge. Build the final product in a new integration
+    directory/repository unless the user explicitly identifies an
+    existing Handsfree target directory. Do not merge two repositories
+    by copying every file into one folder.
+4.  No speculative dependencies. Verify packages, APIs, supported
+    Python/runtime versions, and current SDK syntax from installed
+    metadata or official documentation when available.
+5.  Package-risk review. Before adding any package, assess maintenance,
+    compatibility, permissions, native build requirements, security
+    posture, license, and whether a smaller standard-library or
+    already-installed alternative can do the job. Avoid abandoned,
+    obscure, unmaintained, or unnecessarily large dependencies. If a
+    dependency is risky, use a safer maintained alternative and document
+    the tradeoff.
+6.  Keep deterministic controls deterministic. Common actions such as
+    opening a tab, scrolling, clicking a known page control, or
+    switching modes should not need an LLM. Use deterministic routing
+    for explicit commands and reserve AI for ambiguous requests,
+    planning, summarization, and contextual interpretation.
+7.  Never let an LLM execute arbitrary code or shell commands. The model
+    may propose structured actions only. Validate every action against a
+    typed schema, policy, and allowlist before execution.
+8.  Fail safely. When confidence is low, page context is stale, the
+    target is ambiguous, or an action is risky, ask for clarification or
+    confirmation instead of guessing.
+9.  No fake completion. Do not leave core functions as TODOs, stubs,
+    simulated success messages, or decorative UI. If a capability cannot
+    be completed in the environment, mark it as incomplete, explain why,
+    and provide the next concrete step.
+10. Build and test incrementally. Run available tests and static checks
+    after meaningful changes. Fix regressions rather than suppressing
+    tests.
+11. Respect licenses and attribution. Review both source licenses and
+    dependency licenses before incorporating code. Preserve required
+    notices and do not combine incompatible licenses silently.
+12. Protect secrets and privacy. Never commit API keys, tokens, personal
+    camera frames, voice recordings, browser page contents, or logs
+    containing sensitive information. Provide .env.example, ignore
+    secret files, and default to local processing when practical.
+13. Do not claim accessibility compliance without testing. Use
+    accessibility standards as design targets and document tested
+    behavior, known gaps, and assistive-technology limitations.
+14. No unnecessary rewrite. Reuse and adapt good code; replace only code
+    that is unsafe, incompatible, unmaintainable, or structurally blocks
+    the target architecture.
+
+------------------------------------------------------------------------
+
+3. PHASE ZERO: REPOSITORY AUDIT
+
+Before implementation:
+
+3.1 Inspect AIOS
+
+Determine: - Its actual architecture, supported operating systems,
+language/runtime, entry points, agent lifecycle, tool/action model,
+memory/context model, model-provider abstraction, configuration,
+permissions, and tests. - Which parts can be reused directly, adapted as
+a library, or used only as architectural reference. - Whether it is a
+full agent operating system, an orchestration framework, or something
+else in the checked-out revision. - Any heavyweight dependencies,
+incompatible assumptions, unsafe execution paths, or license
+constraints.
+
+Do not import the entire AIOS codebase simply because it is available.
+Choose the smallest useful subset. Keep AIOS isolated behind an adapter
+if its lifecycle or dependency graph would destabilize the desktop app.
+
+3.2 Inspect GestureAI_Mouse
+
+Inspect, at minimum, if present: - src/eye.py -
+src/Gesture_Controller.py - src/samvk.py - src/Proton.py -
+src/ai_brain.py - src/action_executor.py - src/mode_hub.py -
+src/main.py - Configuration, logging, requirements, and test files.
+
+Verify actual current filenames and implementation; these are expected
+leads, not assumptions.
+
+Pay special attention to: - MediaPipe/face mesh/iris or gaze tracking,
+blink and dwell behavior, head tilt/pose, cursor control, and
+calibration. - Hand gesture recognition and gesture-to-action
+mappings. - Virtual keyboard and non-speech input paths. - Voice
+recognition, text-to-speech, and assistant interaction. - Existing fast
+if/else commands for browser actions, Google search, opening a new tab,
+and other common tasks. - Existing LLM intent parsing, provider
+adapters, action schemas, allowlists, and execution logic. -
+Concurrency, mode state, camera/microphone lifecycle, UI responsiveness,
+and shutdown cleanup. - Platform-specific behavior and error handling.
+
+Retain working features and deterministic browser shortcuts. Do not make
+all commands depend on an AI provider.
+
+3.3 Deliver an audit before major changes
+
+Create docs/REPOSITORY_AUDIT.md containing: - Repository inventory and
+entry points. - Reusable components and their licenses. - Compatibility
+issues and dependency risks. - Security/accessibility concerns. - A
+feature-preservation matrix: existing feature, source module, target
+interface, migration status, and test. - A staged integration plan.
+
+After the audit, continue implementing. Do not stop and wait for
+approval unless blocked by a genuinely destructive or irreversible
+choice.
+
+------------------------------------------------------------------------
+
+4. TARGET ARCHITECTURE
+
+Design a modular system with clear boundaries. Adapt naming to the
+existing code where appropriate, but preserve these responsibilities.
+
+4.1 Input adapters
+
+Each input method emits a normalized event rather than directly
+performing arbitrary computer actions.
+
+Suggested interfaces: - VoiceInputAdapter - GestureInputAdapter -
+GazeInputAdapter - HeadPoseInputAdapter - VirtualKeyboardAdapter -
+KeyboardMouseAdapter for standard input and testing
+
+A normalized event should include: - Source modality. - Event/intent
+type. - Timestamp. - Confidence score where meaningful. - Optional
+target/context. - Calibration/device status. - Cancellation/expiry
+metadata.
+
+Use typed models and explicit validation. Do not force all modalities to
+use the same detection algorithm; only their output contract should be
+shared.
+
+4.2 Intent interpretation and routing
+
+Implement a layered command pipeline:
+
+1.  Normalize input.
+2.  Recognize deterministic commands locally.
+3.  Resolve references against current UI/page context when available.
+4.  Use an LLM only if semantic interpretation or planning is needed.
+5.  Convert the result to a typed action plan.
+6.  Validate policy, risk, target freshness, and required confirmation.
+7.  Execute via the appropriate adapter.
+8.  Verify outcome when possible.
+9.  Return feedback in an accessible form.
+
+Support multi-step plans, but execute them as individually validated
+steps. Re-check state between steps and stop if assumptions fail. Add
+bounded retries only for safe, idempotent operations. Do not blindly
+repeat clicks or submissions.
+
+4.3 Shared action engine
+
+All modalities must call the same action engine. No camera, voice,
+gesture, or UI module should bypass its validation layer.
+
+Create typed action definitions with explicit argument schemas and risk
+classifications. Adapt the action vocabulary already present in
+GestureAI_Mouse, which may include: - click, right_click, double_click -
+scroll - hotkey, press, type_text - open_app, open_url - search_google,
+search_youtube - volume, brightness - screenshot - set_mode / mode
+controls - Semantic browser actions such as find_element, click_element,
+fill_field, select_option, navigate, go_back, and read_page
+
+Only implement actions that can be validated and tested on the target
+platform. Use platform adapters for OS-specific operations. Never accept
+arbitrary executable paths, arbitrary Python, shell strings, JavaScript
+strings, or unrestricted URLs from an LLM.
+
+4.4 Action policy and risk model
+
+Use an explicit policy layer, not scattered conditional checks.
+
+Suggested risk classes: - Low risk: read current page, inspect a visible
+control, scroll, open a new tab, navigate to a non-sensitive URL, change
+a local mode. - Moderate risk: type into a field, change settings,
+download a file, interact with a logged-in account. - High risk: submit
+a form, send a message/email, post/publish, purchase, delete, change
+account/security settings, transfer money, share sensitive data, or run
+a system-level operation.
+
+Exact classification must be configurable and documented. Require clear
+confirmation for consequential or irreversible actions. Confirm the
+specific action and target, not a vague “Proceed?” For example: “Send
+this message to Alex?” Never treat a model’s claim that an action is
+safe as authoritative.
+
+Add: - Global pause/stop/cancel. - A reliable emergency stop available
+without voice. - Action timeouts and cancellation propagation. -
+Idempotency protections where appropriate. - Audit events with sensitive
+values redacted. - Clear “action blocked” explanations. - Optional
+confirmation preferences that never disable mandatory safeguards for
+high-risk actions.
+
+------------------------------------------------------------------------
+
+5. BROWSER EXTENSION AND LOCAL BRIDGE
+
+A browser extension with a local desktop bridge is a core product
+requirement, not a future nice-to-have.
+
+5.1 Extension responsibilities
+
+Implement a Chromium-compatible extension first, using supported
+Manifest V3 APIs. Keep browser-specific code isolated so Firefox or
+other browsers can be supported later.
+
+The extension should: - Read the active tab’s title, URL, and relevant
+page structure only when permission and user intent allow it. - Build a
+compact semantic representation of interactive elements from the
+DOM/accessibility-related properties: role, accessible name, label,
+placeholder, element type, state, and nearby context. - Identify
+elements with stable, short-lived IDs for the current page snapshot. -
+Support semantic operations such as finding a button by accessible name,
+filling a labeled field, selecting an option, reading selected page
+text, and scrolling a target into view. - Verify that the page and
+target snapshot are current before an action. - Report success/failure
+and relevant state changes back to the desktop app. - Clearly indicate
+when the extension is connected, disconnected, waiting for permission,
+or blocked. - Restrict content-script permissions to the minimum
+required. Prefer optional permissions and user-triggered access where
+possible. - Never silently upload complete pages, cookies,
+authentication tokens, form values, or browsing history to an external
+service.
+
+Do not rely on brittle CSS selectors, generated class names, or
+coordinates as the primary locator. Use semantic locators first and
+coordinate fallback only when necessary.
+
+5.2 Local bridge
+
+Create a secure, local-only communication bridge between extension and
+desktop application. Select an appropriate transport based on actual
+browser constraints, such as native messaging or a loopback
+WebSocket/HTTP service. Evaluate and document the choice instead of
+opening a broad network listener by default.
+
+Security requirements: - Bind to loopback only when using a local
+network transport. - Authenticate/validate extension messages using a
+robust pairing or token mechanism. - Validate message schemas,
+origin/extension identity where applicable, payload size, rate limits,
+and request IDs. - Reject arbitrary command execution and arbitrary
+filesystem access. - Do not expose the bridge to the LAN or public
+internet. - Provide connection health checks, timeouts, and clean
+reconnection. - Do not put secrets in extension source code. - Keep an
+explicit allowlist of browser operations. - Prevent replay/stale
+commands where practical.
+
+5.3 Browser-context behavior
+
+When the user says “click the sign-in button,” “search this page for…,”
+or “fill in the address field,” resolve it against the current page’s
+semantic snapshot. If multiple targets match, ask the user to choose. If
+the page changed, refresh context and re-resolve. Do not silently click
+a similarly named but different control.
+
+For sensitive fields such as passwords, payment data, authentication
+codes, and private personal information, do not read values back into
+the LLM context. Minimize collection and keep secret entry local
+whenever possible.
+
+------------------------------------------------------------------------
+
+6. MULTIMODAL ACCESSIBILITY REQUIREMENTS
+
+6.1 Voice
+
+-   Preserve and improve existing voice input if functional.
+-   Support deterministic phrase/alias commands for common actions.
+-   Support natural-language commands for contextual tasks.
+-   Provide visible listening/processing states, a configurable
+    wake/listen mode if supported, and a reliable way to stop listening.
+-   Avoid always-on recording by default. Explain microphone permissions
+    and processing behavior.
+-   Handle recognition failure and noisy environments without repeatedly
+    executing guesses.
+-   Provide text-based alternatives to every voice-dependent critical
+    operation.
+-   Keep TTS concise, interruptible, and configurable; do not require
+    audio feedback.
+
+6.2 Hand gestures
+
+-   Preserve existing GestureAI_Mouse gesture recognition where
+    reliable.
+-   Keep gesture-to-action mappings configurable and visible.
+-   Debounce gestures and add a cooldown so one held pose does not
+    trigger many actions.
+-   Provide confidence thresholds, neutral-pose/re-arm logic, and a
+    calibration flow.
+-   Make gestures optional; avoid requiring complex or painful poses.
+-   Ensure a gesture cannot accidentally trigger high-risk actions
+    without the same confirmation policy as every other modality.
+
+6.3 Eye gaze and blink
+
+-   Preserve existing gaze/iris/face tracking if functional.
+-   Include calibration, cursor smoothing, adjustable dwell duration,
+    adjustable sensitivity, and configurable blink behavior.
+-   Distinguish deliberate blinks from natural blinking as far as
+    technically practical; never promise perfect intent detection.
+-   Provide a clear dwell progress indicator and a way to cancel before
+    dwell completion.
+-   Avoid making ordinary blinking an immediate destructive click.
+-   Support eye-only operation for supported navigation tasks, including
+    an accessible way to open the virtual keyboard, pause gaze actions,
+    and confirm/cancel.
+-   Test different lighting, camera positions, glasses, and camera frame
+    rates where hardware is available.
+-   Make the user aware when tracking confidence is low and allow
+    recalibration.
+
+6.4 Head pose and facial signals
+
+-   Support deliberate head movement only where detection is reliable
+    and configurable.
+-   Require calibration, neutral-pose detection, thresholds, cooldowns,
+    and false-positive protection.
+-   Do not infer emotion, identity, health, or mental state.
+-   Never map incidental facial expression or ordinary head movement to
+    consequential actions by default.
+
+6.5 Virtual keyboard and non-speaking interaction
+
+-   Preserve the existing virtual keyboard if present and functional.
+-   Make it usable through gaze/dwell and supported gestures.
+-   Include cancel, backspace, enter, focus indication, and an
+    accessible method to change dwell speed.
+-   Ensure the application can be operated without voice.
+-   Avoid requiring a user to speak to confirm an action; confirmations
+    must have nonverbal options such as dwell selection, gesture,
+    virtual keyboard, or standard keyboard where available.
+
+6.6 Modality arbitration and conflicts
+
+Several modalities may be active simultaneously. Implement a central
+arbitration policy: - Prioritize explicit cancel/pause/emergency-stop
+input over normal actions. - Prevent duplicate execution when voice,
+gesture, and gaze detect the same intended action. - Give the user
+configurable modality preferences and temporary modality disabling. -
+Use timestamps, event IDs, confidence, and short deduplication
+windows. - Do not resolve ambiguous conflicts by randomly selecting a
+modality. - Provide visible status for active modes and a nonverbal way
+to switch them. - Allow users to disable camera, microphone, or any
+modality independently.
+
+6.7 Feedback
+
+Every accepted, rejected, pending, completed, or failed action should
+provide feedback in suitable channels: - Visual status and focus
+indicators. - Optional speech. - Optional sound or haptic feedback only
+when supported. - Accessible text/status announcements. - Clear
+indication of required confirmation and why an action was blocked.
+
+Feedback itself must not obscure the target or trap the user in a modal
+flow.
+
+------------------------------------------------------------------------
+
+7. AI MODEL AND PROVIDER ABSTRACTION
+
+Create a provider-neutral model interface. Verify the actual provider
+support already implemented before changing it.
+
+Requirements: - Support existing providers that are actually working in
+the source. - Add Groq only through a proper adapter if
+requested/needed; do not claim it is already supported unless
+verified. - Keep model names, endpoints, timeouts, and provider
+selection in configuration. - Never hard-code credentials. Use
+environment variables or a secure local configuration mechanism. -
+Provide a clear error when a key is missing or a provider is
+unavailable. - Keep deterministic commands functional without a model
+key or network access. - Prefer structured outputs / tool-call schemas
+and validate them strictly. - Treat all model output as untrusted
+input. - Do not send raw video, camera frames, microphone recordings,
+complete page DOM, cookies, or sensitive form data to an LLM by
+default. - Send only the minimum contextual information needed for the
+requested task. - Add timeouts, bounded retries, graceful degradation,
+and cancellation. - Avoid a provider abstraction that is so generic it
+prevents using provider-specific structured-output capabilities safely.
+
+LLM planning rules
+
+-   The model may propose a sequence of typed actions, explanations, or
+    clarification questions.
+-   It may not directly call OS functions or bypass the action engine.
+-   Validate each action and re-check page state before every step.
+-   Set step count, duration, and token/context limits.
+-   Ask for clarification when target confidence is insufficient.
+-   Never invent completion; verify via a returned result or observable
+    state when possible.
+-   Provide a no-LLM local mode for privacy, resilience, and common
+    commands.
+
+------------------------------------------------------------------------
+
+8. AIOS INTEGRATION STRATEGY
+
+Do not assume every AIOS component belongs in Handsfree. Based on the
+audit, choose and document one of these approaches: 1. Reuse a small,
+license-compatible module directly. 2. Integrate AIOS through a thin
+adapter or isolated process/service. 3. Reimplement a narrow interface
+if direct reuse would create excessive dependency coupling, while
+respecting license and attribution. 4. Use AIOS only as an architectural
+reference if no component is safe or practical to reuse.
+
+Keep the multimodal desktop runtime independent from long-running agent
+orchestration. Vision and input loops must not block on model calls. Use
+queues/events and cancellation-aware tasks where appropriate. Ensure a
+failed agent runtime does not disable local gaze, gesture, keyboard, or
+deterministic voice commands.
+
+If AIOS includes memory, tools, agent planning, or scheduling features,
+add only those that demonstrably improve Handsfree’s user-facing
+accessibility workflows. Any memory must be user-controlled,
+inspectable, deletable, and disabled or minimized by default for
+sensitive information.
+
+------------------------------------------------------------------------
+
+9. DESKTOP APPLICATION AND USER EXPERIENCE
+
+Retain a lightweight desktop control surface or improve the existing UI.
+Do not build a flashy landing page instead of the product.
+
+The UI should include: - Connection status for the browser
+extension/bridge. - Camera and microphone permission/device status. -
+Current active modalities. - Tracking confidence/calibration status
+where applicable. - A compact activity/action history with redacted
+sensitive values. - Pause, cancel, emergency stop, and reconnect
+controls. - Mode selection and per-modality enable/disable controls. -
+Dwell/sensitivity/gesture threshold settings. - Provider/model
+configuration with clear secret handling. - A dry-run/test mode. -
+First-run setup and calibration. - A short accessible onboarding flow. -
+Useful error states and troubleshooting guidance.
+
+Design: - Minimal, clear, high-contrast, keyboard navigable,
+screen-reader-aware. - Visible focus and state changes; never use color
+alone to communicate state. - Respect reduced-motion preferences where
+relevant. - Do not rely on hover-only controls or tiny click targets. -
+Keep important status and emergency controls reachable. - Avoid
+excessive animations and unnecessary visual complexity.
+
+If a web dashboard is added, it must not replace the desktop runtime
+controls needed to pause or stop the agent.
+
+------------------------------------------------------------------------
+
+10. PLATFORM AND RUNTIME STRATEGY
+
+Determine the primary operating system from the source and target
+environment. The current GestureAI_Mouse implementation may contain
+Windows-specific behavior. Do not claim cross-platform support merely
+because Python runs on multiple systems.
+
+-   Implement a clean platform adapter boundary for OS actions.
+-   Make unsupported features fail with an explicit, actionable message.
+-   Prefer OS APIs and maintained libraries over brittle shell commands.
+-   Avoid administrator/root requirements unless strictly necessary and
+    justified.
+-   Use a single application configuration model.
+-   Ensure camera, microphone, browser bridge, worker threads/processes,
+    and model clients shut down cleanly.
+-   Avoid busy loops and uncontrolled CPU/GPU use.
+-   Keep vision capture and inference decoupled from the UI event loop.
+-   Handle device disconnection and recovery.
+-   Do not add Docker or complex service infrastructure unless it
+    provides clear value for this desktop-first product.
+
+------------------------------------------------------------------------
+
+11. SECURITY, PRIVACY, AND THREAT MODEL
+
+Create docs/SECURITY_AND_PRIVACY.md and implement mitigations.
+
+Threats to consider: - Prompt injection from webpages and page
+content. - Malicious or compromised browser pages. - Model-generated
+unsafe actions. - Forged extension/bridge messages. - Stale DOM element
+references. - Accidental gaze or gesture activation. - Secret leakage
+through logs, telemetry, crash reports, or prompts. - Dependency
+compromise and vulnerable packages. - Unintended shell, filesystem, or
+OS access. - Unauthorized remote access to the local bridge.
+
+Required controls: - Least-privilege permissions. - Strict schemas and
+action allowlists. - Risk classification and explicit confirmation. -
+Loopback-only bridge where applicable and authenticated pairing. -
+Request IDs, freshness checks, timeouts, rate limits, and bounded
+payloads. - Redacted structured logging. - No secret values in logs. -
+No arbitrary code execution. - No arbitrary file read/write from the
+model. - No hidden data collection. - A privacy explanation for camera,
+microphone, browser context, local storage, and model-provider data
+handling. - A kill switch and graceful shutdown.
+
+Treat webpage text as untrusted data, never as instructions that
+override system policy. Page text may inform the user’s requested task
+but must not authorize actions, reveal secrets, disable safeguards, or
+alter the action allowlist.
+
+------------------------------------------------------------------------
+
+12. TESTING AND VALIDATION
+
+Add a meaningful automated test suite, not just a startup smoke test.
+
+Unit tests
+
+-   Intent routing and deterministic command precedence.
+-   Typed action schema validation.
+-   Action allowlist and risk policy.
+-   Confirmation requirements.
+-   Duplicate event suppression and modality arbitration.
+-   Stale browser snapshot rejection.
+-   Bridge message authentication/schema validation.
+-   Provider errors, timeouts, and malformed model responses.
+-   Cancellation, pause, and shutdown.
+-   Redaction of secrets and sensitive fields.
+
+Integration tests
+
+-   Desktop runtime starts without an API key.
+-   A deterministic command is handled locally.
+-   Every modality emits a normalized event and uses the same action
+    engine.
+-   Browser extension can connect to the bridge.
+-   Page semantic snapshot can be retrieved and a safe test action
+    executed.
+-   A target that disappears or changes causes safe failure and
+    re-resolution.
+-   AIOS adapter failure does not disable local controls.
+-   Model provider outage does not disable basic interaction.
+-   Camera/microphone unavailable behavior is explicit and recoverable.
+
+Manual accessibility validation
+
+Create docs/ACCESSIBILITY_TEST_PLAN.md with test cases for: - Voice-only
+navigation. - Eye-only supported navigation. - Gesture-only supported
+navigation. - Non-speaking user flows. - Keyboard-only navigation. -
+Pausing and canceling without voice. - Calibration and recalibration. -
+Low-light/poor-tracking behavior. - Accidental activation and duplicate
+input. - Confirmation for consequential actions. - Screen-reader and
+high-contrast behavior where applicable.
+
+Do not pretend hardware-dependent tests passed if hardware was not
+available. Clearly distinguish automated tests, manual tests completed,
+and tests still requiring a real camera/microphone/user evaluation.
+
+End-to-end demo tasks
+
+Provide a reproducible demo checklist such as: 1. Open a new browser tab
+using a deterministic command. 2. Navigate to a public test page. 3.
+Find a button by accessible name and click it semantically. 4. Locate
+and fill a non-sensitive test field. 5. Read a relevant heading or page
+summary. 6. Pause or cancel without voice. 7. Demonstrate that an
+ambiguous target causes a clarification request. 8. Demonstrate that a
+high-risk action requires explicit confirmation. 9. Demonstrate that
+disconnecting the model provider does not break deterministic controls.
+10. Demonstrate that disabling a modality does not disable the remaining
+modalities.
+
+Use a local fixture/test page where possible. Do not automate real
+purchases, real message sends, account changes, or destructive actions
+as part of tests.
+
+------------------------------------------------------------------------
+
+13. IMPLEMENTATION PHASES
+
+Execute the work in these phases. Keep the product runnable after each
+phase.
+
+Phase 1 — Audit and baseline
+
+-   Inspect both repositories, licensing, environment, and current git
+    status.
+-   Run existing tests or smoke checks where feasible.
+-   Record baseline behavior and known failures.
+-   Produce docs/REPOSITORY_AUDIT.md.
+
+Phase 2 — Integration skeleton
+
+-   Create the new Handsfree project structure.
+-   Establish configuration, typed event/action contracts, logging,
+    lifecycle management, and platform boundaries.
+-   Add a runnable desktop shell and tests.
+-   Preserve original sources and attribution according to license
+    requirements.
+
+Phase 3 — Shared action engine
+
+-   Adapt existing deterministic commands and action executor.
+-   Centralize validation, allowlists, risk levels, confirmation,
+    cancellation, results, and audit logging.
+-   Ensure every input path uses this engine.
+
+Phase 4 — Multimodal adapters
+
+-   Integrate voice, hand gestures, gaze/eye tracking, head pose, and
+    virtual keyboard.
+-   Preserve existing algorithms where they work.
+-   Add confidence thresholds, calibration, cooldowns, deduplication,
+    pause, and cleanup.
+-   Verify no input loop blocks the UI or action engine.
+
+Phase 5 — Browser extension and bridge
+
+-   Implement Manifest V3 extension, pairing/connection, semantic DOM
+    snapshot, safe page actions, result verification, permissions, and
+    disconnect handling.
+-   Add tests and a local fixture page.
+-   Ensure page content cannot override safety policy.
+
+Phase 6 — AIOS and model-provider integration
+
+-   Add the smallest appropriate AIOS adapter/reuse strategy.
+-   Implement or preserve provider adapters based on verified support.
+-   Add structured planning, contextual resolution, clarification,
+    bounded plans, and safe degradation.
+-   Add Groq only if needed and implement it as a validated adapter
+    rather than a special-case bypass.
+
+Phase 7 — UX and accessibility
+
+-   Build calibration/onboarding, status, modality controls, settings,
+    history, and nonverbal emergency controls.
+-   Test all major flows without requiring voice or hand gestures.
+
+Phase 8 — Hardening and verification
+
+-   Run formatting, linting, type checks, unit tests, integration tests,
+    and build/package checks available in the environment.
+-   Fix failures caused by your changes.
+-   Review dependency risks, secrets, licenses, permissions, shutdown,
+    and platform limitations.
+-   Document known limitations honestly.
+
+Phase 9 — Final handoff
+
+-   Update README with architecture, setup, installation, permissions,
+    provider configuration, browser extension installation, usage,
+    calibration, troubleshooting, testing, and security/privacy.
+-   Include exact commands for setup and execution on the actual target
+    OS.
+-   Provide .env.example only for supported optional providers; never
+    include actual secrets.
+-   Provide a feature matrix marking each capability as
+    implemented/tested, implemented but hardware-dependent, partially
+    implemented, or not implemented.
+-   List changed files, architectural decisions, commands run, test
+    outcomes, and remaining limitations.
+
+Do not end after writing the phases. Execute them.
+
+------------------------------------------------------------------------
+
+14. SUGGESTED PROJECT STRUCTURE
+
+Adapt to repository realities; do not force this layout if it conflicts
+with a better existing structure.
+
+    handsfree/
+      README.md
+      LICENSE / THIRD_PARTY_NOTICES as legally required
+      .gitignore
+      .env.example
+      Cargo.toml workspace (plus pyproject.toml only for retained Python adapters)
+      config/
+        defaults.yaml
+      Cargo.toml
+      crates/
+        handsfree-core/
+        handsfree-platform/
+        handsfree-bridge/
+        handsfree-ai/
+      apps/
+        handsfree-desktop/
+      adapters/
+        python-vision/          # only retained sensor/ML adapters, if needed
+      browser-extension/
+        manifest.json
+        service-worker.js
+        content-script.js
+        popup/
+      config/
+        defaults.yaml
+      tests/
+        integration/
+        fixtures/
+      docs/
+        REPOSITORY_AUDIT.md
+        ARCHITECTURE.md
+        SECURITY_AND_PRIVACY.md
+        ACCESSIBILITY_TEST_PLAN.md
+        TROUBLESHOOTING.md
+      browser-extension/
+        manifest.json
+        service-worker.js
+        content-script.js
+        popup/
+      tests/
+        unit/
+        integration/
+        fixtures/
+      docs/
+        REPOSITORY_AUDIT.md
+        ARCHITECTURE.md
+        SECURITY_AND_PRIVACY.md
+        ACCESSIBILITY_TEST_PLAN.md
+        TROUBLESHOOTING.md
+
+This is a conceptual map, not a requirement to create empty files. Only
+add modules that have real implementations and clear responsibilities.
+
+------------------------------------------------------------------------
+
+15. QUALITY BAR AND ACCEPTANCE CRITERIA
+
+The implementation is not complete until the following are true or
+explicitly identified as blocked by the environment:
+
+-   Both source repositories were inspected and their useful components
+    were mapped.
+-   Licenses and attribution were handled correctly.
+-   A runnable Handsfree application exists in one coherent project.
+-   Existing deterministic browser commands (including search and
+    opening a new tab, where present) still work.
+-   Voice, gesture, gaze/eye tracking, head pose, and virtual keyboard
+    adapters use a common normalized event contract where implemented.
+-   All modalities invoke the same action validation/execution pipeline.
+-   Basic commands work without an LLM/API key.
+-   Browser extension communicates securely with the local runtime.
+-   Browser tasks use semantic page context before coordinate-based
+    fallback.
+-   Stale targets and ambiguous targets fail safely.
+-   High-risk actions require explicit, target-specific confirmation.
+-   The user can pause/cancel without voice.
+-   A provider outage does not disable deterministic local controls.
+-   A camera/microphone failure is handled gracefully.
+-   Configuration and secrets are handled safely.
+-   Tests exist and actual results are reported.
+-   Documentation matches the implementation.
+-   No core feature is represented only by a placeholder, mock, or fake
+    success response.
+
+If a requirement is only partially achievable in the current
+environment, implement the safe subset, clearly mark the limitation, and
+provide exact manual steps for finishing or testing it. Never
+misrepresent a partial implementation as complete.
+
+------------------------------------------------------------------------
+
+16. WORKING STYLE AND FINAL RESPONSE
+
+Work like a senior engineer operating in an existing codebase: - Start
+with inspection and evidence. - Make small, coherent, reversible
+changes. - Avoid unrelated refactors. - Explain architectural decisions
+briefly in documentation. - Keep code typed, modular, readable, and
+testable. - Use explicit error handling; do not swallow exceptions
+silently. - Avoid overly abstract frameworks and unnecessary design
+patterns. - Prefer a small number of well-defined interfaces. - Use
+comments to explain non-obvious decisions, not to narrate every line. -
+Keep the project runnable throughout.
+
+When finished, report: 1. What was built and where. 2. How AIOS and
+GestureAI_Mouse were incorporated. 3. Which original features were
+preserved. 4. Which modalities and browser actions actually work. 5.
+Setup and run commands for the actual OS. 6. How to load/connect the
+browser extension. 7. Tests and commands run, with real pass/fail
+results. 8. Dependencies added and any risky packages avoided or
+replaced. 9. Security/privacy measures implemented. 10. Known
+limitations and hardware-dependent checks still required.
+
+Do not claim success for anything you did not execute or verify. Begin
+by inspecting both repositories now, then proceed through
+implementation.

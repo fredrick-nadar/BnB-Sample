@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Handsfree Bridge Status</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      width: 280px;
+      padding: 16px;
+      margin: 0;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    h2 {
+      font-size: 16px;
+      margin-top: 0;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-bottom: 14px;
+    }
+    .status-connected {
+      background-color: #dcfce7;
+      color: #166534;
+    }
+    .status-disconnected {
+      background-color: #fee2e2;
+      color: #991b1b;
+    }
+    label {
+      font-size: 12px;
+      font-weight: 600;
+      display: block;
+      margin-bottom: 4px;
+    }
+    input {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 8px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 13px;
+      margin-bottom: 10px;
+    }
+    button {
+      width: 100%;
+      background-color: #2563eb;
+      color: #ffffff;
+      border: none;
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #1d4ed8;
+    }
+    .info-box {
+      margin-top: 12px;
+      padding: 8px;
+      background-color: #f1f5f9;
+      border-radius: 6px;
+      font-size: 11px;
+      color: #475569;
+    }
+  </style>
+</head>
+<body>
+  <h2>Handsfree Bridge</h2>
+  <div id="status-badge" class="status-badge status-disconnected">Disconnected</div>
+
+  <label for="token-input">Pairing Security Token</label>
+  <input type="text" id="token-input" placeholder="Paste token from Handsfree terminal..." />
+
+  <button id="save-btn">Connect & Save</button>
+
+  <div class="info-box">
+    Ensure the Rust desktop backend is running at <code>127.0.0.1:8765</code>.
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "Handsfree Accessibility Bridge",
+  "version": "1.0.0",
+  "description": "Semantic page interaction bridge for the Handsfree Multimodal Accessibility Agent.",
+  "permissions": [
+    "activeTab",
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background/service_worker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content/semantic_dom.js", "content/action_handler.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "action": {
+    "default_popup": "popup/popup.html",
+    "default_title": "Handsfree Bridge Status"
+  }
+}

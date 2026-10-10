@@ -1,0 +1,34 @@
+# Rust build artifacts
+target/
+**/*.rs.bk
+Cargo.lock
+
+# Python virtual environments & bytecode
+.venv/
+venv/
+env/
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+
+# IDE & OS files
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Secrets & Local runtime data
+.env
+*.local
+credentials.json
+token.json
+session.json
+
+# Test artifacts
+tests/output/
+scratch/

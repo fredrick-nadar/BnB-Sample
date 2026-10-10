@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Handsfree Accessible Test Page</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      max-width: 800px;
+      margin: 40px auto;
+      padding: 24px;
+      line-height: 1.6;
+      background: #fafafa;
+      color: #1a1a1a;
+    }
+    .card {
+      background: #ffffff;
+      padding: 24px;
+      border-radius: 8px;
+      border: 1px solid #e0e0e0;
+      margin-bottom: 24px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    }
+    button {
+      background: #0284c7;
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      margin-right: 12px;
+      margin-bottom: 8px;
+    }
+    button:focus {
+      outline: 3px solid #f59e0b;
+      outline-offset: 2px;
+    }
+    input[type="text"], textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 6px;
+      font-size: 15px;
+      margin-top: 6px;
+      margin-bottom: 16px;
+    }
+    .status-log {
+      padding: 12px;
+      background: #f1f5f9;
+      border-radius: 6px;
+      font-family: monospace;
+      font-size: 14px;
+      min-height: 48px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Handsfree Semantic Verification Fixture</h1>
+  <p>This page tests accessibility-first element identification, semantic clicking, and text field filling without relying on screen coordinates.</p>
+
+  <div class="card">
+    <h2>1. Interactive Semantic Buttons</h2>
+    <button id="btn-search" aria-label="Search Catalog">Search Catalog</button>
+    <button id="btn-submit" aria-label="Submit Order">Submit Order</button>
+    <button id="btn-cancel" aria-label="Cancel Operation" style="background:#dc2626;">Cancel</button>
+  </div>
+
+  <div class="card">
+    <h2>2. Labeled Form Fields</h2>
+    <label for="input-search">Search Keyword</label>
+    <input type="text" id="input-search" placeholder="Type search term here..." />
+
+    <label for="input-notes">Delivery Instructions</label>
+    <textarea id="input-notes" rows="3" placeholder="Enter special delivery notes..."></textarea>
+  </div>
+
+  <div class="card">
+    <h2>3. Interaction Feedback Log</h2>
+    <div id="log-output" class="status-log">Awaiting interaction...</div>
+  </div>
+
+  <script>
+    const logOutput = document.getElementById("log-output");
+
+    function log(msg) {
+      logOutput.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+    }
+
+    document.getElementById("btn-search").addEventListener("click", () => log("Clicked 'Search Catalog' button."));
+    document.getElementById("btn-submit").addEventListener("click", () => log("Clicked 'Submit Order' button."));
+    document.getElementById("btn-cancel").addEventListener("click", () => log("Clicked 'Cancel' button."));
+
+    document.getElementById("input-search").addEventListener("input", (e) => log(`Search input changed to: "${e.target.value}"`));
+    document.getElementById("input-notes").addEventListener("input", (e) => log(`Notes input changed to: "${e.target.value}"`));
+  </script>
+</body>
+</html>

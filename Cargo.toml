@@ -1,0 +1,39 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/handsfree-core",
+    "crates/handsfree-platform",
+    "crates/handsfree-bridge",
+    "crates/handsfree-ai",
+    "apps/handsfree-desktop",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Handsfree Team"]
+license = "MIT"
+
+[workspace.dependencies]
+tokio = { version = "1.43", features = ["full"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+anyhow = "1.0"
+thiserror = "2.0"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+async-trait = "0.1"
+uuid = { version = "1.13", features = ["v4", "serde"] }
+regex = "1.11"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+tokio-tungstenite = "0.26"
+futures-util = "0.3"
+parking_lot = "0.12"
+chrono = { version = "0.4", features = ["serde"] }
+
+# Internal workspace crates
+handsfree-core = { path = "crates/handsfree-core" }
+handsfree-platform = { path = "crates/handsfree-platform" }
+handsfree-bridge = { path = "crates/handsfree-bridge" }
+handsfree-ai = { path = "crates/handsfree-ai" }

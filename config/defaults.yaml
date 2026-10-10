@@ -1,0 +1,58 @@
+# Handsfree System Configuration Defaults
+
+system:
+  log_level: "info"
+  emergency_stop_key: "Escape"
+  auto_start_vision: false
+  deduplication_window_ms: 250
+
+bridge:
+  host: "127.0.0.1"
+  port: 8765
+  request_timeout_ms: 10000
+  ping_interval_sec: 15
+
+eye:
+  camera_index: 0
+  dwell_threshold_sec: 1.5
+  dwell_radius_px: 35
+  click_cooldown_sec: 0.8
+  short_blink_max_sec: 0.4
+  double_blink_window_sec: 0.6
+  long_blink_drag_sec: 1.5
+  blink_confirm_frames: 3
+  ema_alpha: 0.08
+  calib_frames: 60
+  gaze_calib_frames: 120
+  deadzone_px: 5
+  scroll_zone_ratio: 0.10
+  scroll_amount: 3
+  cursor_speed: 1.15
+
+gesture:
+  camera_index: 0
+  pinch_threshold: 0.30
+  cursor_speed: 0.70
+  frame_debounce_count: 4
+  cooldown_sec: 0.30
+
+keyboard:
+  camera_index: 0
+  key_cooldown_sec: 0.40
+  pinch_distance_px: 30
+  dwell_speed_sec: 1.20
+
+voice:
+  microphone_index: 0
+  pause_threshold_sec: 1.0
+  phrase_time_limit_sec: 15
+  require_wake_word: false
+  wake_word: "handsfree"
+  tts_rate: 150
+  tts_volume: 1.0
+  confirmation_timeout_sec: 30
+
+ai:
+  provider: "none"
+  timeout_sec: 15
+  max_plan_steps: 5
